@@ -98,6 +98,25 @@ async def get_course_resource(specialty):
             return "https://stepik.org/catalog"
 
 
+def get_specialty_details(specialty):
+    details = {
+        "Frontend-разработчик (Junior)": {"demand": "Высокая", "plan": "1. HTML/CSS — 1 мес.\n2. JavaScript — 2 мес.\n3. React — 2 мес."},
+        "Frontend-разработчик (Middle)": {"demand": "Высокая", "plan": "1. Углубить React/Vue — 3 мес.\n2. TypeScript — 2 мес.\n3. Оптимизация UI — 2 мес."},
+        "Python-разработчик (Junior)": {"demand": "Высокая", "plan": "1. Основы Python — 2 мес.\n2. Работа с данными — 1 мес.\n3. Веб (Flask) — 2 мес."},
+        "Backend-разработчик (Middle)": {"demand": "Высокая", "plan": "1. Django/Flask — 3 мес.\n2. API (REST) — 2 мес.\n3. Базы данных — 2 мес."},
+        "Аналитик данных (Junior)": {"demand": "Высокая", "plan": "1. Python — 2 мес.\n2. SQL — 1 мес.\n3. Визуализация данных — 2 мес."},
+        "Data Scientist (Middle)": {"demand": "Очень высокая", "plan": "1. ML (scikit-learn) — 3 мес.\n2. Статистика — 2 мес.\n3. Deep Learning — 3 мес."},
+        "Специалист по кибербезопасности (Junior)": {"demand": "Средняя", "plan": "1. Основы сетей — 2 мес.\n2. Безопасность — 2 мес.\n3. Инструменты (Wireshark) — 1 мес."},
+        "Специалист по кибербезопасности (Middle)": {"demand": "Высокая", "plan": "1. Углубить сети — 2 мес.\n2. Pentesting — 3 мес.\n3. Сертификаты (CEH) — 3 мес."},
+        "UX/UI-дизайнер (Junior)": {"demand": "Средняя", "plan": "1. Основы дизайна — 1 мес.\n2. Figma — 2 мес.\n3. Прототипы — 2 мес."},
+        "DevOps Engineer (Junior)": {"demand": "Высокая", "plan": "1. Linux — 2 мес.\n2. Docker — 2 мес.\n3. CI/CD — 2 мес."},
+        "DevOps Engineer (Middle)": {"demand": "Очень высокая", "plan": "1. Kubernetes — 3 мес.\n2. Облака (AWS) — 3 мес.\n3. Автоматизация — 2 мес."},
+        "Mobile Developer (Junior)": {"demand": "Средняя", "plan": "1. Java/Kotlin — 2 мес.\n2. Android Studio — 2 мес.\n3. Простые приложения — 1 мес."},
+        "Mobile Developer (Middle)": {"demand": "Высокая", "plan": "1. Flutter/Swift — 3 мес.\n2. API интеграция — 2 мес.\n3. Оптимизация — 2 мес."},
+    }
+    return details.get(specialty, {"demand": "Не определена", "plan": "Попробуй пройти тест ещё раз!"})
+
+
 @router.message(Command("test"))
 @router.message(lambda message: message.text == "🔄 Начать заново")
 async def start_test(message: types.Message, state: FSMContext):
@@ -200,7 +219,6 @@ async def answer_q12(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
 
     specialty, description = "Не определено", "Попробуй пройти тест ещё раз!"
-
     if user_data["q4"] == "Программирование":
         if user_data["q6"] == "JavaScript" and user_data["q5"] == "React, Vue.js":
             if user_data["q8"] in ["Нет, я новичок", "Базовые знания (курсы)"] and user_data["q3"] == "Удалённая работа":
@@ -250,6 +268,9 @@ async def answer_q12(message: types.Message, state: FSMContext):
             description = "Разрабатываешь приложения на Flutter или Swift."
 
     resource = await get_course_resource(specialty)
+    details = get_specialty_details(specialty)
+    demand = details["demand"]
+    plan = details["plan"]
 
     db.save_user(message.from_user.id, user_data["q1"], user_data, specialty)
 
@@ -268,7 +289,9 @@ async def answer_q12(message: types.Message, state: FSMContext):
         f"10. Задачи: {user_data['q11']}\n11. Стиль работы: {user_data['q12']}\n\n"
         f"🎯 **Рекомендуемая специальность:** {specialty}\n"
         f"ℹ️ {description}\n"
-        f"🔗 Курс: {resource}\n\n"
+        f"📈 **Востребованность:** {demand}\n"
+        f"📚 **План обучения:**\n{plan}\n"
+        f"🔗 **Курс:** {resource}\n\n"
         f"📈 Статистика: 👍: {likes} | 👎: {dislikes}\n\n"
         f"Оцени результат:",
         reply_markup=feedback_keyboard
@@ -298,13 +321,16 @@ async def show_results(message: types.Message):
     if user:
         name, answers_json, specialty = user
         answers = json.loads(answers_json)
+        details = get_specialty_details(specialty)
         await message.answer(
             f"📊 **Твои результаты, {name}!**\n\n"
             f"1. Возраст: {answers['q2']}\n2. Мотивация: {answers['q3']}\n3. Сфера: {answers['q4']}\n"
             f"4. Технологии: {answers['q5']}\n5. Языки: {answers['q6']}\n6. Время: {answers['q7']}\n"
             f"7. Опыт: {answers['q8']}\n8. Английский: {answers['q9']}\n9. Где работать: {answers['q10']}\n"
             f"10. Задачи: {answers['q11']}\n11. Стиль: {answers['q12']}\n\n"
-            f"🎯 **Специальность:** {specialty}"
+            f"🎯 **Специальность:** {specialty}\n"
+            f"📈 **Востребованность:** {details['demand']}\n"
+            f"📚 **План обучения:**\n{details['plan']}"
         )
     else:
         await message.answer("Ты ещё не проходил тест! Начни с /test")
