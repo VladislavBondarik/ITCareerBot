@@ -1,9 +1,13 @@
 import sqlite3
 from threading import Lock
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 class Database:
-    def __init__(self, db_path="users.db"):
+    def __init__(self, db_path=os.getenv("DB_PATH")):
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.cursor = self.conn.cursor()
         self.lock = Lock()
@@ -24,8 +28,7 @@ class Database:
     def save_user(self, user_id, username, preferences, language):
         with self.lock:
             self.cursor.execute(
-                "INSERT OR REPLACE INTO users (user_id, username, preferences, recommended_language) VALUES (?, ?, ?, "
-                "?)",
+                "INSERT OR REPLACE INTO users (user_id, username, preferences, recommended_language) VALUES (?, ?, ?, ?)",
                 (user_id, username, preferences, language)
             )
             self.conn.commit()
